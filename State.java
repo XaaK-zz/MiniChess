@@ -1,3 +1,7 @@
+///////////////////////////////////////////////////////////////////////////////////////
+// Zach Greenvoss
+// CS 542 - Combinatorial Games
+///////////////////////////////////////////////////////////////////////////////////////
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Serializable;
@@ -20,7 +24,7 @@ public class State implements Serializable
 
 	///2D array representing the board spaces
 	//	Uses the character representation of the pieces to distinguish them
-	private char[][] board;
+	public char[][] board;
 	
 	//Current game turn
 	private short currentTurn;
@@ -29,8 +33,8 @@ public class State implements Serializable
 	public char currentPlayer;
 	
 	//constants for the board size
-	final int MAX_WIDTH = 5;
-	final int MAX_HEIGHT = 6;
+	public final int MAX_WIDTH = 5;
+	public final int MAX_HEIGHT = 6;
 	
 	//flag to indicate the king has been captures
 	private Boolean kingCaptured =false;
@@ -177,11 +181,13 @@ public class State implements Serializable
 	//	detected.
 	//Purpose: Validates and executes a the requested move.
 	////////////////////////////////////////////////////////////////
-	public void Move(Move moveToExecute) throws MoveException
+	public Undo Move(Move moveToExecute) throws MoveException
 	{
 		//Get the moving Piece and destination piece
-		char movingPiece = board[moveToExecute.fromSquare.x][moveToExecute.fromSquare.y];
-		char destPiece = board[moveToExecute.toSquare.x][moveToExecute.toSquare.y];
+		//char movingPiece = board[moveToExecute.fromSquare.x][moveToExecute.fromSquare.y];
+		//char destPiece = board[moveToExecute.toSquare.x][moveToExecute.toSquare.y];
+		char movingPiece = board[moveToExecute.fromX][moveToExecute.fromY];
+		char destPiece = board[moveToExecute.toX][moveToExecute.toY];
 		
 		//Move validation logic
 		if(movingPiece == '.')
@@ -198,12 +204,14 @@ public class State implements Serializable
 		if(tempMoves.contains(moveToExecute))
 		{
 			//Legal move - execute move
-			board[moveToExecute.fromSquare.x][moveToExecute.fromSquare.y] = '.';
-			board[moveToExecute.toSquare.x][moveToExecute.toSquare.y] = movingPiece;
+			board[moveToExecute.fromX][moveToExecute.fromY] = '.';
+			board[moveToExecute.toX][moveToExecute.toY] = movingPiece;
 			
 			//Check for King
 			if(destPiece == 'k' || destPiece == 'K')
+			{
 				this.kingCaptured = true;
+			}
 			else
 			{
 				//Switch current player
@@ -218,17 +226,43 @@ public class State implements Serializable
 			}
 			
 			//Special case - handle pawn->queen conversion
-			if(movingPiece == 'P' && moveToExecute.toSquare.y == 0)
-				board[moveToExecute.toSquare.x][moveToExecute.toSquare.y] = 'Q';
-			else if(movingPiece == 'p' && moveToExecute.toSquare.y == MAX_HEIGHT-1)
-				board[moveToExecute.toSquare.x][moveToExecute.toSquare.y] = 'q';
+			if(movingPiece == 'P' && moveToExecute.toY == 0)
+				board[moveToExecute.toX][moveToExecute.toY] = 'Q';
+			else if(movingPiece == 'p' && moveToExecute.toY == MAX_HEIGHT-1)
+				board[moveToExecute.toX][moveToExecute.toY] = 'q';
 		}
 		else
 		{
 			//Was not found in the move collection - must not be a valid move
 			throw new MoveException("Not a valid move.");
 		}
+		return new Undo(moveToExecute,movingPiece, destPiece);
+	}
+	
+	public void UndoMove(Undo reverseMove)
+	{
+		if(reverseMove.reversedMove != null)
+		{
+			board[reverseMove.reversedMove.toX][reverseMove.reversedMove.toY] = reverseMove.movingPiece;
+			board[reverseMove.reversedMove.fromX][reverseMove.reversedMove.fromY] = reverseMove.destPiece;
 			
+			if(reverseMove.destPiece == 'k' || reverseMove.destPiece == 'K')
+				this.kingCaptured = false;
+			else
+			{
+				//Switch current player
+				if(this.currentPlayer == 'B')
+				{
+					this.currentPlayer = 'W';
+				}
+				else
+				{
+					this.currentPlayer = 'B';
+					//Advance Turn counter if black just went (complete cycle)
+					currentTurn--;
+				}
+			}
+		}
 	}
 	
 	////////////////////////////////////////////////////////////////
@@ -287,107 +321,6 @@ public class State implements Serializable
 			}
 		}
 		return ValidMoves;
-	}
-	
-	public int Eval(char evalColor)
-	{
-		int temp = 0;
-		
-		for(int y=0;y<MAX_HEIGHT;y++)
-		{
-			for(int x=0;x<MAX_WIDTH;x++)
-			{
-				//if(board[x][y] == 'K' && this.currentPlayer=='W')
-				//	temp += 100;
-				//else if(board[x][y] == 'k' && this.currentPlayer=='B')
-				//	temp += 100;
-				if(board[x][y] == 'K')
-				{
-					if(evalColor=='W')
-						temp += 2000;
-					else
-						temp -= 2000;
-				}
-				else if(board[x][y] == 'k')
-				{
-					if(evalColor=='B')
-						temp += 2000;
-					else
-						temp -= 2000;
-				}
-				else if(board[x][y] == 'Q')
-				{
-					if(evalColor=='W')
-						temp += 900;
-					else
-						temp -= 900;
-				}
-				else if(board[x][y] == 'q')
-				{
-					if(evalColor=='B')
-						temp += 900;
-					else
-						temp -= 900;
-				}
-				else if(board[x][y] == 'R')
-				{
-					if(evalColor=='W')
-						temp += 500;
-					else
-						temp -= 500;
-				}
-				else if(board[x][y] == 'r')
-				{
-					if(evalColor=='B')
-						temp += 500;
-					else
-						temp -= 500;
-				}
-				else if(board[x][y] == 'B')
-				{
-					if(evalColor=='W')
-						temp += 300;
-					else
-						temp -= 300;
-				}
-				else if(board[x][y] == 'b')
-				{
-					if(evalColor=='B')
-						temp += 300;
-					else
-						temp -= 300;
-				}
-				else if(board[x][y] == 'P')
-				{
-					if(evalColor=='W')
-						temp += 100;
-					else
-						temp -= 100;
-				}
-				else if(board[x][y] == 'p')
-				{
-					if(evalColor=='B')
-						temp += 100;
-					else
-						temp -= 100;
-				}
-				else if(board[x][y] == 'N')
-				{
-					if(evalColor=='W')
-						temp += 300;
-					else
-						temp -= 300;
-				}
-				else if(board[x][y] == 'n')
-				{
-					if(evalColor=='B')
-						temp += 300;
-					else
-						temp -= 300;
-				}
-			}
-		}
-		return temp;
 	}
 	
 	///////////////////////////////////////////////////////////////////////////////////
@@ -588,6 +521,33 @@ public class State implements Serializable
 		
 		return validMoves;
 	}
-
 	
+	/////////////////////////////////////////////////////////////////////////////
+	//IsSpaceThreatened
+	//Input: x,y (int) coordinates to check for threat
+	//Output: Boolean flag indicating the piece is threatened
+	//Purpose: Routine to tell is a given location can be attacked by the opposing
+	//	color.  
+	//	Note: Currently this routine is too slow to actually use.  Still evaluating 
+	/////////////////////////////////////////////////////////////////////////////
+	public Boolean IsSpaceThreatened(int x, int y)
+	{
+		char currentPiece = this.board[x][y];
+		Vector<Move> validMoves = null;
+		if(Character.isUpperCase(currentPiece))
+		{
+			//White
+			validMoves = this.MoveGen('B');
+		}
+		else
+			validMoves = this.MoveGen('W');
+		
+		for (Move oMove : validMoves)
+		{
+			if(oMove.toX == x && oMove.toY == y)
+				return true;
+		}
+		return false;
+	}
+
 }

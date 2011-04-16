@@ -1,3 +1,7 @@
+///////////////////////////////////////////////////////////////////////////////////////
+// Zach Greenvoss
+// CS 542 - Combinatorial Games
+///////////////////////////////////////////////////////////////////////////////////////
 import java.io.IOException;
 import java.util.Random;
 import java.util.Scanner;
@@ -11,27 +15,26 @@ public class Driver {
 
 	public static void main(String[] args) throws IOException, MoveException
 	{
-		Random oRand = new Random(); 
 		char continueYN;
 		
 		int players = 0;
 		Boolean keepPlaying = true;
 		State oState = new State();
 		
-		ChessPlayer whitePlayer = null;
-		ChessPlayer blackPlayer = null;
+		BasePlayer whitePlayer = null;
+		BasePlayer blackPlayer = null;
 		
-		int MaxMoveTimeLimitMS = 10000;
+		int MaxMoveTimeLimitMS = 1000;
 		
 		////////////////////////////////////////////
 		//Get Number of players
 		////////////////////////////////////////////
 		try
 		{
-			System.out.println("Hello - welcome to the Stella-3000 MiniChess simulator.\nHow many human players 0 or 1? Enter 9 for test mode.");
+			System.out.println("Hello - welcome to the Stella-3000 MiniChess simulator.\nHow many human players 0 or 1? Enter 9 for test mode.  \nEnter 8 for geneic algoorithm (hit q to quit this).");
 			Scanner kb = new Scanner( System.in) ; 
 			players = kb.nextInt();
-			if(players != 0 && players != 1 && players != 9)
+			if(players != 0 && players != 1 && players != 9 && players != 8)
 				throw new Exception();
 		}
 		catch(Exception ex)
@@ -48,6 +51,11 @@ public class Driver {
 				TestMode();
 				return;
 			}
+			else if(players == 8)
+			{
+				EvolMode();
+				return;
+			}
 			
 			//Init new game state
 			oState.NewGame();
@@ -57,8 +65,12 @@ public class Driver {
 			if(players == 0)
 			{
 				//Create two computer players
-				whitePlayer = new ChessPlayer('W');
-				blackPlayer = new ChessPlayer('B');
+				//whitePlayer = new ChessPlayer('W');
+				whitePlayer = new EvolvingPlayer('W');
+				((EvolvingPlayer)whitePlayer).LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
+				//blackPlayer = new ChessPlayer('B');
+				blackPlayer  = new EvolvingPlayer('B');
+				((EvolvingPlayer)blackPlayer).LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
 				
 				do
 				{
@@ -96,7 +108,9 @@ public class Driver {
 			}
 			else if(players == 1)
 			{
-				blackPlayer = new ChessPlayer('B');
+				//blackPlayer = new ChessPlayer('B');
+				blackPlayer = new EvolvingPlayer('B');
+				((EvolvingPlayer)blackPlayer).LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
 				
 				do
 				{
@@ -124,17 +138,14 @@ public class Driver {
 					}
 					while(inputError);
 				
-					//SHow board
+					//Show board
 					oState.ShowBoard(System.out);
 					
 					if(!oState.IsGameOver())
 					{
 						//Computer's turn
 						System.out.println("Calculating my next move to best crush you...");
-						//Get moves
-						//Vector<Move> oTemp = oState.MoveGen();
-						//Pick random
-						//Move tempMove = oTemp.get(oRand.nextInt(oTemp.size()));
+						//Select next move
 						Move tempMove = blackPlayer.GetNextMove(oState, 1000);
 						System.out.println("Move Selected: " + tempMove);
 						try
@@ -191,11 +202,12 @@ public class Driver {
 	//	Internal method used to invoke the testharness
 	//		methods built to support test-driven development
 	//////////////////////////////////////////
-	private static void TestMode() throws IOException
+	private static void TestMode() throws IOException, MoveException
 	{
 		TestHarness oTest = new TestHarness();
 		try
 		{
+			oTest.TestPlayerCalc4();
 			/*
 			oTest.TestKingMovement1();
 			oTest.TestKingMovement2();
@@ -230,19 +242,197 @@ public class Driver {
 			oTest.TestKnightMovement4();
 			oTest.TestKnightMovement5();
 			oTest.TestKnightMovement6();
-			oTest.TestPlayerCalc1();
+			
+			//oTest.TestPlayerCalc1();
+			
 			oTest.TestPlayerCalc2();
-			oTest.TestPlayerCalc3();*/
+			oTest.TestPlayerCalc3();
 			oTest.TestPlayerCalc4();
 			oTest.TestPlayerCalc5();
 			oTest.TestPlayerCalc6();
 			oTest.TestPlayerCalc7();
+			
+			oTest.TestPlayerCalc8();
+			
+			oTest.TestEvolPlayer1();
+			oTest.TestEvolPlayer2();
+			
+			oTest.TestTiming();
+			
+			oTest.TestThreatenLogic1();
+			oTest.TestThreatenLogic2();
+			
+			oTest.TestPlayerCalc3();
+			*/
+			//oTest.UndoMoveTest1();
 		}
 		catch(TestException ex)
 		{
 			System.out.print(" - Test Validation Error!\n" + ex.TestName + "\n" + ex.FailureReason + "\n");
 		}
+	}
+	
+	private static State RunGame(BasePlayer whitePlayer, BasePlayer blackPlayer, 
+			Boolean showOutput, int MaxMoveTimeLimitMS) throws MoveException, IOException
+	{
+		State oState = new State();
+		do
+		{
+			if(showOutput)
+				System.out.println("Calculating next white move...");
+			Move whiteMove = whitePlayer.GetNextMove(oState, MaxMoveTimeLimitMS);
+			if(showOutput)
+				System.out.println("White Move Selected: " + whiteMove);
+			
+			//Execute move
+			oState.Move(whiteMove);
+			
+			if(showOutput)
+				oState.ShowBoard(System.out);
+			
+			if(!oState.IsGameOver())
+			{
+				if(showOutput)
+					System.out.println("Calculating next black move...");
+				Move blackMove = blackPlayer.GetNextMove(oState, MaxMoveTimeLimitMS);
+				if(showOutput)
+					System.out.println("Black Move Selected: " + blackMove);
+				
+				//Execute move
+				oState.Move(blackMove);
+				
+				if(showOutput)
+					oState.ShowBoard(System.out);
+				
+			}
+		}
+		while(!oState.IsGameOver());
 		
+		return oState;
+	}
+	
+	//Genetic algorithm:
+	//	1. Create N evolving players - all with basic eval rules
+	//		Mutate each one
+	//	2. Run each player against basic player 10 times
+	//		Keep track of those who win more than 50%
+	//	3. Create new group of 10
+	//		Keep winners from previous round + fill in new ones (as copies from winner)
+	//		Mutate each one?  Or just new ones
+	//	Repeat 2 until quit or win 100%
+	private static void EvolMode() throws MoveException, IOException
+	{
+		//Scanner keyboard = new Scanner(System.in);
+		int generation=1;
+		Boolean shouldQuit = false;
+		int numberOfPlayers = 10;
+		int numberOfGames = 10;
+		String startRules = "K=2000,k=2000,Q=900,q=900,R=500,r=500,B=300,b=300,P=100,p=100,N=300,n=300";
+		Vector<EvolvingPlayer> players = new Vector<EvolvingPlayer>();
+		ChessPlayer basicPlayer = new ChessPlayer('B');
+		int playerWin[] = new int[numberOfPlayers];
+		long start,end;
+		Random randGen = new Random();
+		
+		for(int x=0;x<numberOfPlayers;x++)
+		{
+			EvolvingPlayer oPlayer = new EvolvingPlayer('W');
+			oPlayer.LoadRules(startRules);
+			oPlayer.Mutate();
+			players.add(oPlayer);
+		}
+		
+		while(!shouldQuit)
+		{
+			for(int x=0;x<numberOfPlayers;x++)
+			{
+				playerWin[x] = 0;
+				for(int game=0;game<numberOfGames;game++)
+				{
+					start = System.currentTimeMillis();
+					System.out.print("Running EvolvingPlayer: " + x + " in game " + game + " in generation " + generation);
+					State oState = RunGame(players.get(x),basicPlayer,false,1000);
+					end = System.currentTimeMillis() - start;
+					System.out.println(" finished in " + end + " MilliSeconds.");
+					if(oState.GetGameState() == -1)	//White won
+					{
+						System.out.println("   Victory for EvolvingPlayer: " + x + " in game " + game + " in generation " + generation);
+						playerWin[x] = playerWin[x] + 1;
+					}
+				}
+			}
+			generation++;
+			System.out.println("Examining win/loss for this generation...");
+			Vector<EvolvingPlayer> tempVector = new Vector<EvolvingPlayer>();
+			String tempRules = "";
+			for(int x=0;x<numberOfPlayers;x++)
+			{
+				if(playerWin[x] >= (numberOfGames/2))
+				{
+					System.out.println("Player " + x + " keeping to next gen.");
+					//tempVector.add((EvolvingPlayer)DeepCopy.copy(players.get(x)));
+					tempVector.add(players.get(x));
+					tempRules = players.get(x).GetRules();
+				}
+			}
+			
+			System.out.println("Combining winning rules for next generation...");
+			int numberOfCombinings = randGen.nextInt(tempVector.size()-1);
+			for(int x=0;x<numberOfCombinings;x++)
+			{
+				int player1Num = randGen.nextInt(tempVector.size()-1);
+				int player2Num = randGen.nextInt(tempVector.size()-1);
+				System.out.println("Combining player " + player1Num + " and player " + player2Num);
+				EvolvingPlayer player1 = tempVector.get(player1Num);
+				EvolvingPlayer player2 = tempVector.get(player2Num);
+				player1.Combine(player2);
+				if(randGen.nextInt(100) < 5)
+				{
+					System.out.println("...Mutation...");
+					player1.Mutate();
+				}
+			}
+			//Now we have players to keep for this gen - rebuild arroy
+			
+			System.out.println("Rebuilding array - keeping rules: " + tempRules);
+			for(int x=0;x<numberOfPlayers;x++)
+			{
+				if(tempVector.size()-1 > x)
+				{
+					//players.set(x, (EvolvingPlayer)DeepCopy.copy(tempVector.get(x)));
+					players.set(x, (tempVector.get(x)));
+				}
+				else
+				{
+					EvolvingPlayer oPlayer = new EvolvingPlayer('W');
+					if(tempRules.compareTo("") == 0)
+						oPlayer.LoadRules(startRules);
+					else
+						oPlayer.LoadRules(tempRules);
+					oPlayer.Mutate();	
+					players.set(x,oPlayer);
+				}
+			}
+			System.out.println("Player array - current rules: ");
+			for(int x=0;x<numberOfPlayers;x++)
+			{
+				System.out.println("   Player: " + x + players.get(x).GetRules());
+			}
+			/*
+			System.out.println("Continue? y/n");
+			String input = "";
+			try
+			{
+				input = keyboard.next();
+			}
+			catch(Exception ex)
+			{
+				input = "n";
+			}
+			if(input.compareTo("n") == 0)
+				shouldQuit = true;
+				*/
+		}
 	}
 	
 }

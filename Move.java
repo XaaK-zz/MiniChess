@@ -1,30 +1,50 @@
+import java.io.Serializable;
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Zach Greenvoss
+// CS 542 - Combinatorial Games
+///////////////////////////////////////////////////////////////////////////////////////
+
 /////////////////////////////////////////////////////////////////////////
 //Move 
 //	Class representing a move (from Square->to Square)
 ////////////////////////////////////////////////////////////////////////
-public class Move 
+public class Move implements Serializable
 {
-	//from/to Square properties
-	public Square fromSquare;
-	public Square toSquare;
+	private static final long serialVersionUID = -7674360126274753246L;
 	
+	//from/to Square properties
+	public short fromX;
+	public short fromY;
+	public short toX;
+	public short toY;
+	
+	/////////////////////////////////////////////////////////
+	//Move Constructor
+	//	Basic constructor
+	/////////////////////////////////////////////////////////
 	public Move()
 	{
-		fromSquare = null;
-		toSquare = null;
+		fromX = fromY = toX = toY = 0;
 	}
 	
 	//////////////////////////////////////////////////////////
 	//Move Constructor
-	//Input: from (Square): Square object representing the
-	//			source square this move originates from
-	//		to (Square): Square object representing the 
-	//			destination square for this move
+	//Input: fromX (short): x value of the source square 
+	//			this move originates from
+	//		fromY (short): y value of the source square 
+	//			this move originates from
+	//		toX (short): x value of the destination square 
+	//			this move is for
+	//		fromY (short): y value of the destination square 
+	//			this move is for
 	/////////////////////////////////////////////////////////
-	public Move(Square from,Square to)
+	public Move(short _fromX, short _fromY, short _toX, short _toY)
 	{
-		fromSquare = from;
-		toSquare = to;
+		fromX = _fromX;
+		fromY = _fromY;
+		toX = _toX;
+		toY = _toY;
 	}
 	
 	//////////////////////////////////////////////////////////
@@ -38,10 +58,9 @@ public class Move
 	//		fromY (int): y value of the destination square 
 	//			this move is for
 	/////////////////////////////////////////////////////////
-	public Move(int fromX, int fromY, int toX, int toY)
+	public Move(int _fromX, int _fromY, int _toX, int _toY)
 	{
-		fromSquare = new Square(fromX,fromY);
-		toSquare = new Square(toX,toY);
+		this((short)_fromX,(short)_fromY,(short)_toX,(short)_toY);
 	}
 	
 	//////////////////////////////////////////////////////////////
@@ -50,7 +69,10 @@ public class Move
 	///////////////////////////////////////////////////////////////
 	public String toString()
 	{
-		return ("Move: From:" + fromSquare.toString() + " To:" + toSquare.toString());
+		short fromCol = (short) ((short)'a' + fromX);
+		short toCol = (short) ((short)'a' + toX);
+		return Character.toString((char)fromCol) + ((Integer)(fromY+1)).toString() + "-" +
+			Character.toString((char)toCol) + ((Integer)(toY+1)).toString();
 	}
 	
 	///////////////////////////////////////////////////////////////
@@ -62,10 +84,10 @@ public class Move
 	public boolean equals(Object other) 
 	{ 
 		Move oTemp = (Move)other;
-		if(this.fromSquare.x == oTemp.fromSquare.x &&
-		   this.fromSquare.y == oTemp.fromSquare.y &&
-		   this.toSquare.x == oTemp.toSquare.x &&
-		   this.toSquare.y == oTemp.toSquare.y)
+		if(this.fromX == oTemp.fromX &&
+		   this.fromY == oTemp.fromY &&
+		   this.toX == oTemp.toX &&
+		   this.toY == oTemp.toY)
 			return true;
 		else
 			return false;
@@ -93,7 +115,7 @@ public class Move
 			int _col2 = (int)Character.toLowerCase(col2) - (int)'a';
 			int _row1 = Character.digit(row1,10);
 			int _row2 = Character.digit(row2,10);
-			return new Move(_col1,_row1-1,_col2,_row2-1);
+			return new Move((short)_col1,(short)(_row1-1),(short)_col2,(short)(_row2-1));
 		}
 		catch(Exception ex)
 		{

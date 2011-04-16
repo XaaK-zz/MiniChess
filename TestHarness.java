@@ -1,3 +1,7 @@
+///////////////////////////////////////////////////////////////////////////////////////
+// Zach Greenvoss
+// CS 542 - Combinatorial Games
+///////////////////////////////////////////////////////////////////////////////////////
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Vector;
@@ -1075,9 +1079,10 @@ public class TestHarness {
 		{
 			long start = System.currentTimeMillis();
 			Move tempMove = oPlayer.GetNextMove(oState, 1000);
-			if(tempMove.fromSquare.x != 2 || tempMove.fromSquare.y != 2 || 
-					tempMove.toSquare.x != 1 || tempMove.toSquare.y != 0)
-				throw new TestException(testName,"Failed to capture Knight over Pawn.");
+			//Move tempMove = oPlayer.GetNextMove(oState, Integer.MAX_VALUE);
+			if(tempMove.fromX != 2 || tempMove.fromY != 2 || 
+					tempMove.toX != 1 || tempMove.toY != 0)
+				throw new TestException(testName,"Failed to capture Knight over Pawn - " + tempMove.toString());
 			long elapsedTimeMillis = System.currentTimeMillis()-start;
 			if(elapsedTimeMillis > 1500)
 				throw new TestException(testName,"Took too long - " + elapsedTimeMillis);
@@ -1100,7 +1105,7 @@ public class TestHarness {
 			".p...\n" +
 			".Q...\n" +
 			".....\n" +
-			".....";
+			"...P.";
 		oState.ReadBoard(new StringReader(board));
 		
 		ChessPlayer oPlayer = new ChessPlayer('W');
@@ -1108,12 +1113,12 @@ public class TestHarness {
 		{
 			long start = System.currentTimeMillis();
 			
-			Move tempMove = oPlayer.GetNextMove(oState, 1000);
-			if(tempMove.fromSquare.x == 1 && tempMove.fromSquare.y == 3 && 
-					tempMove.toSquare.x == 1 && tempMove.toSquare.y == 2)
-				throw new TestException(testName,"Picked a bad move.");
+			Move tempMove = oPlayer.GetNextMove(oState, 2000);
+			if(tempMove.fromX == 1 && tempMove.fromY == 3 && 
+					tempMove.toX == 1 && tempMove.toY == 2)
+				throw new TestException(testName,"Picked a bad move. - " + tempMove.toString());
 			long elapsedTimeMillis = System.currentTimeMillis()-start;
-			if(elapsedTimeMillis > 1500)
+			if(elapsedTimeMillis > 2500)
 				throw new TestException(testName,"Took too long - " + elapsedTimeMillis);
 		} catch (MoveException e) 
 		{
@@ -1143,8 +1148,8 @@ public class TestHarness {
 			long start = System.currentTimeMillis();
 			
 			Move tempMove = oPlayer.GetNextMove(oState, 1000);
-			if(tempMove.fromSquare.x != 1 && tempMove.fromSquare.y != 3 && 
-					tempMove.toSquare.x != 4 && tempMove.toSquare.y != 2)
+			if(tempMove.fromX != 1 && tempMove.fromY != 3 && 
+					tempMove.toX != 4 && tempMove.toY != 2)
 				throw new TestException(testName,"Didn't capture king.");
 			long elapsedTimeMillis = System.currentTimeMillis()-start;
 			if(elapsedTimeMillis > 1500)
@@ -1177,7 +1182,7 @@ public class TestHarness {
 			long start = System.currentTimeMillis();
 			
 			Move tempMove = oPlayer.GetNextMove(oState, 1000);
-			if(tempMove.toSquare.x != 1 || tempMove.toSquare.y != 2)
+			if(tempMove.toX != 1 || tempMove.toY != 2)
 				throw new TestException(testName,"Didn't capture pawn Move: " + tempMove.toString());
 			long elapsedTimeMillis = System.currentTimeMillis()-start;
 			if(elapsedTimeMillis > 1500)
@@ -1204,13 +1209,16 @@ public class TestHarness {
 			"RNBQK";
 		oState.ReadBoard(new StringReader(board));
 		
-		ChessPlayer oPlayer = new ChessPlayer('B');
+		//ChessPlayer oPlayer = new ChessPlayer('B');
+		EvolvingPlayer oPlayer = new EvolvingPlayer('B');
+		oPlayer.LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
+		
 		try 
 		{
 			long start = System.currentTimeMillis();
 			
 			Move tempMove = oPlayer.GetNextMove(oState, 1000);
-			if(tempMove.toSquare.x != 1 || tempMove.toSquare.y != 2)
+			if(tempMove.toX != 1 || tempMove.toY != 2)
 				throw new TestException(testName,"Didn't capture pawn - " + tempMove.toString());
 			long elapsedTimeMillis = System.currentTimeMillis()-start;
 			if(elapsedTimeMillis > 1500)
@@ -1243,7 +1251,7 @@ public class TestHarness {
 			long start = System.currentTimeMillis();
 			
 			Move tempMove = oPlayer.GetNextMove(oState, 1000);
-			if(tempMove.toSquare.x != 1 || tempMove.toSquare.y != 3)
+			if(tempMove.toX != 1 || tempMove.toY != 3)
 				throw new TestException(testName,"Didn't capture pawn Move: " + tempMove.toString());
 			long elapsedTimeMillis = System.currentTimeMillis()-start;
 			if(elapsedTimeMillis > 1500)
@@ -1276,7 +1284,7 @@ public class TestHarness {
 			long start = System.currentTimeMillis();
 			
 			Move tempMove = oPlayer.GetNextMove(oState, 1000);
-			if(tempMove.toSquare.x != 0 || tempMove.toSquare.y != 2)
+			if(tempMove.toX != 0 || tempMove.toY != 2)
 				throw new TestException(testName,"Didn't capture king Move: " + tempMove.toString());
 			long elapsedTimeMillis = System.currentTimeMillis()-start;
 			if(elapsedTimeMillis > 1500)
@@ -1286,6 +1294,276 @@ public class TestHarness {
 			throw new TestException(testName, "Move Error detected: " + e.ErrorDescription);
 		}
 		System.out.println(" - Success");
+	}
+	
+	public void TestPlayerCalc8() throws TestException, IOException
+	{
+		String testName = "TestPlayerCalc8";
+		System.out.print("Running " + testName);
+		
+		State oState = new State();
+		String board = "4 B\n" + 
+			".qb.r\n" + 
+			"pkppp\n" +
+			"P...n\n" +
+			".....\n" +
+			"..PPP\n" +
+			"RNBQK";
+		oState.ReadBoard(new StringReader(board));
+		
+		//ChessPlayer oPlayer = new ChessPlayer('B');
+		EvolvingPlayer oPlayer = new EvolvingPlayer('B');
+		oPlayer.LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
+		
+		try 
+		{
+			long start = System.currentTimeMillis();
+			
+			Move tempMove = oPlayer.GetNextMove(oState, 1000);
+			if(tempMove.toX == 0 && tempMove.toY == 2 &&
+					tempMove.fromX == 1 && tempMove.fromY == 1)
+				throw new TestException(testName,"Put king into check: " + tempMove.toString());
+			long elapsedTimeMillis = System.currentTimeMillis()-start;
+			if(elapsedTimeMillis > 1500)
+				throw new TestException(testName,"Took too long - " + elapsedTimeMillis);
+		} catch (MoveException e) 
+		{
+			throw new TestException(testName, "Move Error detected: " + e.ErrorDescription);
+		}
+		System.out.println(" - Success");
+	}
+	
+	public void TestPlayerCalc9() throws TestException, IOException
+	{
+		String testName = "TestPlayerCalc9";
+		System.out.print("Running " + testName);
+		
+		State oState = new State();
+		String board = "39 W\n" + 
+			".....\n" + 
+			".....\n" +
+			".....\n" +
+			".k..Q\n" +
+			"..qpP\n" +
+			"RqBQK";
+		oState.ReadBoard(new StringReader(board));
+		
+		//ChessPlayer oPlayer = new ChessPlayer('B');
+		EvolvingPlayer oPlayer = new EvolvingPlayer('B');
+		oPlayer.LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
+		
+		try 
+		{
+			long start = System.currentTimeMillis();
+			
+			Move tempMove = oPlayer.GetNextMove(oState, 1000);
+			if(tempMove.toX != 1 && tempMove.toY != 3 )
+				throw new TestException(testName,"Did not capture king: " + tempMove.toString());
+			long elapsedTimeMillis = System.currentTimeMillis()-start;
+			if(elapsedTimeMillis > 1500)
+				throw new TestException(testName,"Took too long - " + elapsedTimeMillis);
+		} catch (MoveException e) 
+		{
+			throw new TestException(testName, "Move Error detected: " + e.ErrorDescription);
+		}
+		System.out.println(" - Success");
+	}
+	
+	public void TestTiming() throws TestException, IOException, MoveException
+	{
+		ChessPlayer player1 = new ChessPlayer('W');
+		ChessPlayer player2 = new ChessPlayer('B');
+		
+		long startTime = System.currentTimeMillis();
+		RunGame(player1,player2,false,1000);
+		long endTime = System.currentTimeMillis();
+		System.out.println("Single Game took: " + ((endTime-startTime)/1000) + " seconds.");
+		
+	}
+	
+	public void TestEvolPlayer1() throws TestException, IOException
+	{
+		String testName = "TestEvolPlayer1";
+		System.out.print("Running " + testName);
+		EvolvingPlayer tempPlayer = null;
+		
+		tempPlayer = new EvolvingPlayer('W');
+		tempPlayer.LoadRules("K=1000,Q=900");
+		if(tempPlayer.GetRules().compareTo("K=1000,Q=900") != 0)
+			throw new TestException(testName,"Did not extract rules correctly. " + tempPlayer.GetRules());
+		
+		System.out.println(" - Success");
+	}
+	
+	public void TestEvolPlayer2() throws TestException, IOException
+	{
+		String testName = "TestEvolPlayer2";
+		System.out.print("Running " + testName);
+		
+		State oState = new State();
+		String board = "1 W\n" + 
+			".n.p.\n" + 
+			".....\n" +
+			"..N..\n" +
+			".....\n" +
+			".....\n" +
+			".....";
+		oState.ReadBoard(new StringReader(board));
+		
+		//ChessPlayer oPlayer = new ChessPlayer('W');
+		EvolvingPlayer oPlayer = new EvolvingPlayer('W');
+		oPlayer.LoadRules("K=2000,k=2000,Q=900,q=900,R=500,r=500,B=300,b=300,P=100,p=100,N=300,n=300");
+		try 
+		{
+			long start = System.currentTimeMillis();
+			Move tempMove = oPlayer.GetNextMove(oState, 1000);
+			if(tempMove.fromX != 2 || tempMove.fromY != 2 || 
+					tempMove.toX != 1 || tempMove.toY != 0)
+				throw new TestException(testName,"Failed to capture Knight over Pawn - " + tempMove.toString());
+			long elapsedTimeMillis = System.currentTimeMillis()-start;
+			if(elapsedTimeMillis > 1500)
+				throw new TestException(testName,"Took too long - " + elapsedTimeMillis);
+		} catch (MoveException e) 
+		{
+			throw new TestException(testName, "Move Error detected: " + e.ErrorDescription);
+		}
+		System.out.println(" - Success");
+	}
+	
+	public void TestThreatenLogic1() throws TestException, IOException
+	{
+		String testName = "TestThreatenLogic1";
+		System.out.print("Running " + testName);
+		
+		State oState = new State();
+		String board = "1 W\n" + 
+			".n.p.\n" + 
+			".....\n" +
+			"..N..\n" +
+			".....\n" +
+			".....\n" +
+			".....";
+		oState.ReadBoard(new StringReader(board));
+		
+		if(!oState.IsSpaceThreatened(1, 0))
+			throw new TestException(testName,"Failed to see black knight as threatened.");
+		
+		if(!oState.IsSpaceThreatened(3, 0))
+			throw new TestException(testName,"Failed to see black pawn as threatened.");
+		
+		if(!oState.IsSpaceThreatened(2, 2))
+			throw new TestException(testName,"Failed to see white knight as threatened.");
+		
+		System.out.println(" - Success");
+	}
+	
+	public void TestThreatenLogic2() throws TestException, IOException
+	{
+		String testName = "TestThreatenLogic2";
+		System.out.print("Running " + testName);
+		
+		State oState = new State();
+		String board = "11 W\n" + 
+			"k..r.\n" + 
+			"p.ppp\n" +
+			".....\n" +
+			"....P\n" +
+			"P..K.\n" +
+			"RQBb.";
+		oState.ReadBoard(new StringReader(board));
+		
+		EvolvingPlayer oPlayer = new EvolvingPlayer('W');
+		oPlayer.LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
+		
+		try 
+		{
+			//long start = System.currentTimeMillis();
+			Move tempMove = oPlayer.GetNextMove(oState, 2000);
+			if(tempMove.toX != 3 || tempMove.toY != 5)
+				throw new TestException(testName,"Failed to capture bishop - " + tempMove.toString());
+			//long elapsedTimeMillis = System.currentTimeMillis()-start;
+			//if(elapsedTimeMillis > 1500)
+			//	throw new TestException(testName,"Took too long - " + elapsedTimeMillis);
+		} catch (MoveException e) 
+		{
+			throw new TestException(testName, "Move Error detected: " + e.ErrorDescription);
+		}
+		System.out.println(" - Success");
+	}
+	
+	public void UndoMoveTest1() throws TestException, IOException
+	{
+		String testName = "UndoMoveTest1";
+		System.out.print("Running " + testName);
+		
+		State oState = new State();
+		String board = "11 W\n" + 
+			"k..r.\n" + 
+			"p.Ppp\n" +
+			".....\n" +
+			"....P\n" +
+			"P..K.\n" +
+			"RQBb.";
+		oState.ReadBoard(new StringReader(board));
+		
+		EvolvingPlayer oPlayer = new EvolvingPlayer('W');
+		oPlayer.LoadRules("k=2005,R=546,Q=913,P=45,r=446,B=344,N=344,q=908,p=107,K=3000,n=300,b=297");
+		
+		try 
+		{
+			System.out.println("Current State After Pawn Move:");
+			Undo oUndo = oState.Move(new Move(2,1,2,0));
+			oState.ShowBoard(System.out);
+			
+			oState.UndoMove(oUndo);
+			
+			System.out.println("Current State After Pawn Move UNDO:");
+			oState.ShowBoard(System.out);
+			
+		} catch (MoveException e) 
+		{
+			throw new TestException(testName, "Move Error detected: " + e.ErrorDescription);
+		}
+		System.out.println(" - Success");
+	}
+	
+	private static State RunGame(BasePlayer whitePlayer, BasePlayer blackPlayer, 
+			Boolean showOutput, int MaxMoveTimeLimitMS) throws MoveException, IOException
+	{
+		State oState = new State();
+		do
+		{
+			if(showOutput)
+				System.out.println("Calculating next white move...");
+			Move whiteMove = whitePlayer.GetNextMove(oState, MaxMoveTimeLimitMS);
+			if(showOutput)
+				System.out.println("White Move Selected: " + whiteMove);
+			
+			//Execute move
+			oState.Move(whiteMove);
+			
+			if(showOutput)
+				oState.ShowBoard(System.out);
+			
+			if(!oState.IsGameOver())
+			{
+				if(showOutput)
+					System.out.println("Calculating next black move...");
+				Move blackMove = blackPlayer.GetNextMove(oState, MaxMoveTimeLimitMS);
+				if(showOutput)
+					System.out.println("Black Move Selected: " + blackMove);
+				
+				//Execute move
+				oState.Move(blackMove);
+				
+				if(showOutput)
+					oState.ShowBoard(System.out);
+				
+			}
+		}
+		while(!oState.IsGameOver());
+		
+		return oState;
 	}
 	
 }

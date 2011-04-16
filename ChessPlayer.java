@@ -1,118 +1,123 @@
-import java.util.Random;
-import java.util.Vector;
+///////////////////////////////////////////////////////////////////////////////////////
+// Zach Greenvoss
+// CS 542 - Combinatorial Games
+///////////////////////////////////////////////////////////////////////////////////////
 
-public class ChessPlayer 
+/////////////////////////////////////////////////////////////////////////////////////
+//ChessPlayer
+//	Represents a "basic" chess playing adversary
+/////////////////////////////////////////////////////////////////////////////////////
+public class ChessPlayer extends BasePlayer
 {
-	private char color;
-	final int MAXDEPTH = 6;
-	Boolean debug = false;
-	Random randomGen = new Random(); 
-	
+	//Basic constructor with color
 	public ChessPlayer(char _color)
 	{
-		color = _color;
+		super(_color);
 	}
 	
-	public Move GetNextMove(State currentBoard, long timeLimitInMS) throws MoveException
+	//////////////////////////////////////////////////////////////////////////////////
+	//Eval
+	//Input: boardPosition (State): Current state of the board to evaluate
+	//		 evalColor (char): Color to evaluate 
+	//Output: Numerical representation of the given board for the given color
+	//Purpose: Provides a "basic" evaluation routine as a baseline to compare
+	//	other players against.
+	//	Intentionally very basic.
+	//////////////////////////////////////////////////////////////////////////////////
+	protected int Eval(State boardPosition, char evalColor)
 	{
-		long start = System.currentTimeMillis();
+		int temp = 0;
 		
-		CalculatedMove tempMove = this.NegaMaxCalc(currentBoard, null, start+timeLimitInMS, MAXDEPTH);
-		if(debug)
-			System.out.println("Move Selected: " + tempMove.toString());
-				
-		return (Move)tempMove;
-	}
-	
-	private String printWithDepth(String output, int depth)
-	{
-		String temp = "";
-		for(int x=MAXDEPTH;x>depth;x--)
+		for(int y=0;y<boardPosition.MAX_HEIGHT;y++)
 		{
-			temp += "   ";
-		}
-		return temp + output;
-	}
-	
-	private CalculatedMove NegaMaxCalc(State boardPosition, Move currentMove, long maxTimeMS, int currentDepth) throws MoveException
-	{
-		if(debug)
-		{
-			if(currentMove != null)
-				System.out.println(printWithDepth("NegaMaxCalc - currentMove: " + currentMove.toString() + " Depth: " + currentDepth +
-						" Current Player: " + boardPosition.currentPlayer,currentDepth));
-			else
-				System.out.println(printWithDepth("NegaMaxCalc - Depth: " + currentDepth + " Current Player: " + boardPosition.currentPlayer,currentDepth));
-		}
-		
-		Vector<CalculatedMove> moveCollection = new Vector<CalculatedMove>();
-		
-		if(boardPosition.IsGameOver() )
-		{
-			if(debug)
-				System.out.println(printWithDepth("End of recursion because game over: " + currentMove.toString() + " Eval: " + (-boardPosition.Eval(boardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
-			
-			return new CalculatedMove(-boardPosition.Eval(boardPosition.currentPlayer == 'W' ? 'W' : 'B'));
-		}
-		else if(currentDepth <= 0 || (maxTimeMS < System.currentTimeMillis() && currentMove != null))
-		{
-			if(debug)
-				System.out.println(printWithDepth("End of recursion: " + currentMove.toString() + " Eval: " + (-boardPosition.Eval(boardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
-			return new CalculatedMove(-boardPosition.Eval(boardPosition.currentPlayer == 'W' ? 'B' : 'W'));
-		}
-		else
-		{
-			Vector<Move> moves = boardPosition.MoveGen();
-			for (Move oMove: moves)
+			for(int x=0;x<boardPosition.MAX_WIDTH;x++)
 			{
-				State newBoardPosition = (State)DeepCopy.copy(boardPosition);
-	            
-				newBoardPosition.Move(oMove);
-				CalculatedMove tempMove = NegaMaxCalc(newBoardPosition,oMove, maxTimeMS,currentDepth - 1);
-				if(tempMove != null)
-					moveCollection.add(new CalculatedMove(oMove,-tempMove.MoveValue));
-				else
+				if(boardPosition.board[x][y] == 'K')
 				{
-					if(debug)
-						System.out.println(printWithDepth("tempMove null.. Eval: " + " Eval: " + (-boardPosition.Eval(newBoardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
-					
-					moveCollection.add(new CalculatedMove(oMove,-newBoardPosition.Eval(newBoardPosition.currentPlayer == 'W' ? 'B' : 'W')));
+					if(evalColor=='W')
+						temp += 2000;
+					else
+						temp -= 2000;
+				}
+				else if(boardPosition.board[x][y] == 'k')
+				{
+					if(evalColor=='B')
+						temp += 2000;
+					else
+						temp -= 2000;
+				}
+				else if(boardPosition.board[x][y] == 'Q')
+				{
+					if(evalColor=='W')
+						temp += 900;
+					else
+						temp -= 900;
+				}
+				else if(boardPosition.board[x][y] == 'q')
+				{
+					if(evalColor=='B')
+						temp += 900;
+					else
+						temp -= 900;
+				}
+				else if(boardPosition.board[x][y] == 'R')
+				{
+					if(evalColor=='W')
+						temp += 500;
+					else
+						temp -= 500;
+				}
+				else if(boardPosition.board[x][y] == 'r')
+				{
+					if(evalColor=='B')
+						temp += 500;
+					else
+						temp -= 500;
+				}
+				else if(boardPosition.board[x][y] == 'B')
+				{
+					if(evalColor=='W')
+						temp += 300;
+					else
+						temp -= 300;
+				}
+				else if(boardPosition.board[x][y] == 'b')
+				{
+					if(evalColor=='B')
+						temp += 300;
+					else
+						temp -= 300;
+				}
+				else if(boardPosition.board[x][y] == 'P')
+				{
+					if(evalColor=='W')
+						temp += 100;
+					else
+						temp -= 100;
+				}
+				else if(boardPosition.board[x][y] == 'p')
+				{
+					if(evalColor=='B')
+						temp += 100;
+					else
+						temp -= 100;
+				}
+				else if(boardPosition.board[x][y] == 'N')
+				{
+					if(evalColor=='W')
+						temp += 300;
+					else
+						temp -= 300;
+				}
+				else if(boardPosition.board[x][y] == 'n')
+				{
+					if(evalColor=='B')
+						temp += 300;
+					else
+						temp -= 300;
 				}
 			}
-			int minValue = -10000;
-			Vector<CalculatedMove> tempMoves = new Vector<CalculatedMove>();
-			CalculatedMove tempMove = null;
-			
-			if(debug)
-				System.out.println(printWithDepth("Evaluating all returned moves...",currentDepth-1));
-			
-			for (CalculatedMove tempCalcMove: moveCollection)
-			{
-				if(debug)
-					System.out.println(printWithDepth("tempCalcMove: Current Player: " + boardPosition.currentPlayer + " Move: " + 
-						tempCalcMove.toString() + " - Value: " + tempCalcMove.MoveValue,currentDepth-1));
-				
-				if(tempCalcMove.MoveValue > minValue)
-				{
-					tempMoves.clear();
-					tempMoves.add(tempCalcMove);
-					minValue = tempCalcMove.MoveValue;
-				}
-				else if(tempCalcMove.MoveValue == minValue)
-				{
-					tempMoves.add(tempCalcMove);
-				}
-			}
-			if(tempMoves.size() > 1)
-				tempMove = tempMoves.get(randomGen.nextInt(tempMoves.size()-1));
-			else if(tempMoves.size() == 1)
-				tempMove = tempMoves.get(0);
-			
-			if(debug)
-				if(tempMove != null)
-					System.out.println(printWithDepth("Returning move from NegaMaxCalc - " + tempMove.toString(),currentDepth-1));
-			
-			return tempMove;
 		}
+		return temp;
 	}
 }

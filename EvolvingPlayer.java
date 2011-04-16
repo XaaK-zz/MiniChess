@@ -29,7 +29,8 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 	}
 	
 	//Constructor with color
-	public EvolvingPlayer(char _color) {
+	public EvolvingPlayer(char _color) 
+	{
 		super(_color);
 		evalRules = new Hashtable<Character,Integer>();
 	}
@@ -46,6 +47,20 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 	{
 		int temp = 0;
 		
+		if(boardPosition.IsGameOver())
+		{
+			int state = boardPosition.GetGameState();
+			
+			if(state == -1 && evalColor == 'W')
+			{
+				return Integer.MAX_VALUE;
+			}
+			else if(state == 1 && evalColor == 'B')
+			{
+				return Integer.MAX_VALUE;
+			}
+		}
+		
 		for(int y=0;y<boardPosition.MAX_HEIGHT;y++)
 		{
 			for(int x=0;x<boardPosition.MAX_WIDTH;x++)
@@ -55,7 +70,7 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 					int pieceValue = this.evalRules.get(boardPosition.board[x][y]);
 					char piece = boardPosition.board[x][y];
 					/*
-					 * Trying to figure out how to add positioning information - this does not work yet
+					 //Trying to figure out how to add positioning information - this does not work yet
 					if(boardPosition.IsSpaceThreatened(x, y))
 					{
 						if(piece == 'K' || piece == 'k' )
@@ -67,6 +82,7 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 					}
 					*/
 					//Adding some value to pawns if they advance
+					/*
 					if(piece == 'p' && evalColor == 'B')
 					{
 						if(y > 1)
@@ -77,7 +93,7 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 						if(y < 5)
 							pieceValue += ((5-y) * 10);
 					}
-					
+					*/
 					if(Character.isUpperCase(piece))
 					{
 						if(evalColor=='W')
@@ -123,8 +139,10 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 	}
 	
 	///////////////////////////////////////////////////////////////////////////////
-	//
-	//
+	//GetRules
+	//Input: None
+	//Output: Comma-separated list of evaluation rules for the current player
+	//Purpose: Provide a way to extract the current rules for this player object
 	//////////////////////////////////////////////////////////////////////////////
 	public String GetRules()
 	{
@@ -138,6 +156,12 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 		return (String) oString.toString().subSequence(0, oString.toString().length()-1);
 	}
 	
+	/////////////////////////////////////////////////////////////////////////////
+	//Mutate
+	//Input: None
+	//Output: None
+	//Purpose: Randomly shifts each rule in this player +/- 10
+	////////////////////////////////////////////////////////////////////////////
 	public void Mutate()
 	{
 		for(char piece : evalRules.keySet())
@@ -152,6 +176,14 @@ public class EvolvingPlayer extends BasePlayer implements Serializable
 		}
 	}
 
+	/////////////////////////////////////////////////////////////////////////////
+	//Combine
+	//Input: oPlayer (EvolvingPlayer): A separate EvolvingPlayer object with which
+	//		to combine the rules with the current object
+	//Output: None
+	//Purpose: Takes two players and combines the rules - thus propogating them to 
+	//		the next generation.
+	////////////////////////////////////////////////////////////////////////////
 	public void Combine(EvolvingPlayer oPlayer)
 	{
 		for(char piece : evalRules.keySet())

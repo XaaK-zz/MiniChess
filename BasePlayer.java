@@ -15,9 +15,9 @@ public abstract class BasePlayer
 	//what side this player is one
 	protected char color;
 	//Max search depth
-	protected int MAXDEPTH = 4;
+	protected int MAXDEPTH = 6;
 	//Debug mode flag
-	protected Boolean debug = false;
+	protected Boolean debug = true;
 	//random generator
 	protected Random randomGen = new Random(); 
 	
@@ -50,15 +50,50 @@ public abstract class BasePlayer
 	{
 		//get the current time
 		long start = System.currentTimeMillis();
+		Boolean outOfTime = false;
+		int d = 1;
+		CalculatedMove storedMove = null;
 		
-		//Use NegaMaxCalc to find the best move
-		CalculatedMove tempMove = this.NegaMaxCalc(currentBoard, null, start+timeLimitInMS, MAXDEPTH);
+		do
+		{
+			if(debug)
+				System.out.println("--------Starting level " + d + " -------------------");
+			
+			//Use NegaMaxCalc to find the best move
+			CalculatedMove tempMove = this.NegaMaxCalc(currentBoard, start+timeLimitInMS, d, 
+					Integer.MIN_VALUE, Integer.MAX_VALUE);
+			//CalculatedMove tempMove = this.NegaMaxCalc(currentBoard, null, start+timeLimitInMS, d, 
+			//		Integer.MAX_VALUE, Integer.MIN_VALUE);
+			if(tempMove != null)
+			{
+				storedMove = tempMove;
+				/*
+				if(tempMove.MoveValue == Integer.MAX_VALUE)
+				{
+					if(debug && storedMove != null)
+						System.out.println("MAX VALUE");
+					outOfTime = true;
+				}
+				*/
+			}
+			else
+				outOfTime = true;
+			d++;
+			if(d >= MAXDEPTH)
+				outOfTime = true;
+			if(debug && storedMove != null)
+				System.out.println("Move Selected at level d: " + d + " storedMove: " + storedMove.toString());
+			
+		}
+		while(!outOfTime);
+		
+		//System.out.println("Depth searched: " + d);
 		
 		//Show the move selected....
-		if(debug)
-			System.out.println("Move Selected: " + tempMove.toString());
+		if(debug && storedMove != null)
+			System.out.println("Move Selected: " + storedMove.toString());
 			
-		return (Move)tempMove;
+		return (Move)storedMove;
 	}
 	
 	/////////////////////////////////////////////////////////////////////////////////
@@ -81,20 +116,23 @@ public abstract class BasePlayer
 	//	currentMove (Move): Move object that led to the current board position
 	//	maxTimeMS (long): How long we have to calculate the negamax value in MS
 	//	currentDepth (int): Current depth we are at in the depth-first search
+	//  alpha (int): TODO
+	//	beta (int): TODO
 	//Output:
 	//	CalculatedMove object containing a move to perform as well as the resulting value
 	//		of the board position
 	//Purpose: Perform a depth-first traversal of the board state.
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	protected CalculatedMove NegaMaxCalc(State boardPosition, Move currentMove, long maxTimeMS, int currentDepth) throws MoveException
+	protected CalculatedMove NegaMaxCalc(State boardPosition, long maxTimeMS, 
+			int currentDepth, int alpha, int beta) throws MoveException
 	{
 		if(debug)
 		{
-			if(currentMove != null)
-				System.out.println(printWithDepth("NegaMaxCalc - currentMove: " + currentMove.toString() + " Depth: " + currentDepth +
-						" Current Player: " + boardPosition.currentPlayer,currentDepth));
-			else
-				System.out.println(printWithDepth("NegaMaxCalc - Depth: " + currentDepth + " Current Player: " + boardPosition.currentPlayer,currentDepth));
+			//if(currentMove != null)
+			//	System.out.println(printWithDepth("NegaMaxCalc - currentMove: " + currentMove.toString() + " Depth: " + currentDepth +
+			//			" Current Player: " + boardPosition.currentPlayer,currentDepth));
+			//else
+			//	System.out.println(printWithDepth("NegaMaxCalc - Depth: " + currentDepth + " Current Player: " + boardPosition.currentPlayer,currentDepth));
 		}
 		
 		Vector<CalculatedMove> moveCollection = new Vector<CalculatedMove>();
@@ -102,48 +140,158 @@ public abstract class BasePlayer
 		//Check to see if this is an ending position
 		if(boardPosition.IsGameOver() )
 		{
-			if(debug)
-				System.out.println(printWithDepth("End of recursion because game over: " + currentMove.toString() + " Eval: " + (-Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
+			//if(debug)
+			//	System.out.println(printWithDepth("End of recursion because game over: Eval: " + (Eval(boardPosition,boardPosition.currentPlayer)),currentDepth));
 			
-			return new CalculatedMove(-Eval(boardPosition,boardPosition.currentPlayer));
+			return new CalculatedMove(Eval(boardPosition,boardPosition.currentPlayer));
 		}
-		else if(currentDepth <= 0 || (maxTimeMS < System.currentTimeMillis() && currentMove != null))
+		else if(maxTimeMS < System.currentTimeMillis())
+		{
+			return null;
+		}
+		else if(currentDepth <= 0)
 		{
 			//Are we at the depth OR are we out of time
-			if(debug)
-				System.out.println(printWithDepth("End of recursion: " + currentMove.toString() + " Eval: " + (-Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
+			//if(debug)
+			//	System.out.println(printWithDepth("End of recursion: Eval: " + (Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
 			
 			//Evaluate the current position
-			return new CalculatedMove(-Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'B' : 'W'));
+			return new CalculatedMove(Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'W' : 'B'));
 		}
 		else
 		{
 			//Get all the moves from this position
 			Vector<Move> moves = boardPosition.MoveGen();
+			if(moves.size() == 0)
+				return null;
+			Move storedMove = new Move();
+			int alphaTemp = alpha;
+			
+			//int betaTemp = Integer.MIN_VALUE;
 			for (Move oMove: moves)
 			{
+				//if(debug)
+				//	System.out.println(printWithDepth("Move Loop: Move: " + oMove.toString() + " beta value: " + beta + " alphaTemp: " + alphaTemp,currentDepth));
+				
 				//Create a copy of the board position
-				State newBoardPosition = (State)DeepCopy.copy(boardPosition);
+				//State newBoardPosition = (State)DeepCopy.copy(boardPosition);
 	            
 				//Apply the move
-				newBoardPosition.Move(oMove);
+				Undo undoMove = boardPosition.Move(oMove);
 				
-				//Calculate the negamax of this move
-				CalculatedMove tempMove = NegaMaxCalc(newBoardPosition,oMove, maxTimeMS,currentDepth - 1);
 				
-				//If no valid moves
+				int value = -1;
+				CalculatedMove tempMove = NegaMaxCalc(boardPosition, maxTimeMS,currentDepth - 1, -beta, -alphaTemp);	
+				
+				//if(debug && tempMove != null)
+				//	System.out.println(printWithDepth("tempMove: " + tempMove.toString(),currentDepth));
+				
+				//if(boardPosition.IsGameOver())
+				//	value = -Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'W' : 'B');
+				//else
+				//	value = -Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'B' : 'W');
 				if(tempMove != null)
-					moveCollection.add(new CalculatedMove(oMove,-tempMove.MoveValue));
-				else
+				{
+					tempMove.MoveValue *= -1;
+					//alphaTemp = java.lang.Math.max(storedMove.MoveValue, alphaTemp);
+					if(tempMove.MoveValue > alphaTemp)
+					{
+						//if(debug)
+						//	System.out.println(printWithDepth("tempMove.MoveValue > alphaTemp: " + tempMove.MoveValue + " " + alphaTemp,currentDepth));
+						if(debug)
+						{
+							System.out.println(currentDepth + " Keeping Move: " + oMove + " Value: " + tempMove.MoveValue + " Board After Move:");
+							boardPosition.ShowBoard(System.out);
+						}
+						alphaTemp = tempMove.MoveValue;
+						storedMove.fromX = oMove.fromX;
+						storedMove.toX = oMove.toX;
+						storedMove.fromY = oMove.fromY;
+						storedMove.toY = oMove.toY;
+					}
+					if(alphaTemp >= beta)
+					{
+						if(debug && storedMove != null)
+							System.out.println(printWithDepth("beta cutoff",currentDepth));
+						
+						//alphaTemp = tempMove.MoveValue;
+						storedMove.fromX = oMove.fromX;
+						storedMove.toX = oMove.toX;
+						storedMove.fromY = oMove.fromY;
+						storedMove.toY = oMove.toY;
+						boardPosition.UndoMove(undoMove);
+						break;
+					}
+					
+				}
+				//if(value < alphaTemp)
+				//	alphaTemp = value;
+				//if(value > betaTemp)
+				//	betaTemp = value;
+				
+				//if(value > beta)
+				//{
+					//if(debug)
+					//	System.out.println(printWithDepth("value >= beta -- value: " + value,currentDepth));
+					
+					//moveCollection.add(new CalculatedMove(oMove,-value));
+				//}
+				//else
+				//if(value <= beta)
+				boardPosition.UndoMove(undoMove);
+			}
+			//	if(alphaTemp >= beta)
+			//	{
+			//		if(debug)
+			//		{
+			//			System.out.println(printWithDepth("alphaTemp >= beta -- alphaTemp: " + alphaTemp + " beta: " 
+			//					+ beta + " Move: " + oMove,currentDepth));
+			//		}
+			//		return new CalculatedMove(oMove,alphaTemp);
+			//	}
+				
+				/*
+				if(alphaTemp < beta )
 				{
 					if(debug)
-						System.out.println(printWithDepth("tempMove null.. Eval: " + " Eval: " + (-Eval(boardPosition,newBoardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
+						System.out.println(printWithDepth("alphaTemp < beta -- alphaTemp: " + alphaTemp + " beta: " + beta,currentDepth));
 					
-					//Add this possible move to the move collection
-					moveCollection.add(new CalculatedMove(oMove,-Eval(newBoardPosition,newBoardPosition.currentPlayer == 'W' ? 'B' : 'W')));
+					//beta = value;
+				
+					//Calculate the negamax of this move
+					CalculatedMove tempMove = NegaMaxCalc(boardPosition,oMove, maxTimeMS,currentDepth - 1, -beta, -alphaTemp);
+				
+					//If no valid moves
+					if(tempMove != null)
+					{
+						if(debug)
+							System.out.println(printWithDepth("tempMove found: " + tempMove.toString() + " MoveValue: " + tempMove.MoveValue,currentDepth));
+					
+						//if(tempMove.MoveValue >= alphaTemp)
+						//	alphaTemp = tempMove.MoveValue;
+					
+						moveCollection.add(new CalculatedMove(oMove,-tempMove.MoveValue));
+						
+					}
+					else
+					{
+						if(debug)
+							System.out.println(printWithDepth("tempMove null.. Eval: " + " Eval: " + (Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'B' : 'W')),currentDepth));
+						
+						//Add this possible move to the move collection
+						moveCollection.add(new CalculatedMove(oMove,Eval(boardPosition,boardPosition.currentPlayer == 'W' ? 'B' : 'W')));
+					}
+					
 				}
-			}
-			
+				*/
+				//boardPosition.UndoMove(undoMove);
+			if(debug)
+				System.out.println(currentDepth + " End... -> storedMove: " + storedMove);
+			if(storedMove == null)
+				return new CalculatedMove(alphaTemp);
+			else
+				return new CalculatedMove(storedMove,alphaTemp);
+			/*
 			//Setup data for evaluating moves
 			int minValue = Integer.MIN_VALUE;
 			Vector<CalculatedMove> tempMoves = new Vector<CalculatedMove>();
@@ -186,6 +334,7 @@ public abstract class BasePlayer
 					System.out.println(printWithDepth("Returning move from NegaMaxCalc - " + tempMove.toString(),currentDepth-1));
 			
 			return tempMove;
+			*/
 		}
 	}
 	
@@ -201,10 +350,10 @@ public abstract class BasePlayer
 	protected String printWithDepth(String output, int depth)
 	{
 		String temp = "";
-		for(int x=MAXDEPTH;x>depth;x--)
+		for(int x=0;x<depth;x++)
 		{
 			temp += "   ";
 		}
-		return temp + output;
+		return temp + depth+ " " + output;
 	}
 }
